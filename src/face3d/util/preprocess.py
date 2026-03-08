@@ -9,7 +9,7 @@ import os
 from skimage import transform as trans
 import torch
 import warnings
-warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 warnings.filterwarnings("ignore", category=FutureWarning) 
 
 
@@ -41,12 +41,16 @@ def POS(xp, x):
 # resize and crop images for face reconstruction
 def resize_n_crop_img(img, lm, t, s, target_size=224., mask=None):
     w0, h0 = img.size
-    w = (w0*s).astype(np.int32)
-    h = (h0*s).astype(np.int32)
-    left = (w/2 - target_size/2 + float((t[0] - w0/2)*s)).astype(np.int32)
-    right = left + target_size
-    up = (h/2 - target_size/2 + float((h0/2 - t[1])*s)).astype(np.int32)
-    below = up + target_size
+    s = float(s.item() if hasattr(s, "item") else s)
+    w = int(w0*s)
+    h = int(h0*s)
+    t0 = float(t[0].item() if hasattr(t[0], "item") else t[0])
+    t1 = float(t[1].item() if hasattr(t[1], "item") else t[1])
+    _w0 = float(w0); _h0 = float(h0)
+    left = int(float(w)/2 - float(target_size)/2 + (t0 - _w0/2)*s)
+    right = int(left + target_size)
+    up = int(float(h)/2 - float(target_size)/2 + (_h0/2 - t1)*s)
+    below = int(up + target_size)
 
     img = img.resize((w, h), resample=Image.BICUBIC)
     img = img.crop((left, up, right, below))
@@ -98,6 +102,9 @@ def align_img(img, lm, lm3D, mask=None, target_size=224., rescale_factor=102.):
 
     # processing the image
     img_new, lm_new, mask_new = resize_n_crop_img(img, lm, t, s, target_size=target_size, mask=mask)
-    trans_params = np.array([w0, h0, s, t[0], t[1]])
+    _sv = float(s.item() if hasattr(s, "item") else s)
+    _t0 = float(t[0].item() if hasattr(t[0], "item") else t[0])
+    _t1 = float(t[1].item() if hasattr(t[1], "item") else t[1])
+    trans_params = np.array([float(w0), float(h0), _sv, _t0, _t1])
 
     return trans_params, img_new, lm_new, mask_new
